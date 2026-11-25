@@ -105,20 +105,26 @@ def update_room_status_api(room_code: str, payload: dict):
         return {"success": False, "error": str(e)}
 
 
+def _serve_spa_or_legacy(legacy_file: str):
+    dist_index = os.path.join(WEB_DIST_DIR, "index.html")
+    if os.path.exists(dist_index):
+        return FileResponse(dist_index)
+    return FileResponse(legacy_file)
+
 @app.get("/admin")
 @app.get("/admin.html")
 def get_admin_page():
-    return FileResponse("static/admin.html")
+    return _serve_spa_or_legacy("static/admin.html")
 
 @app.get("/petugas")
 @app.get("/petugas.html")
 def get_petugas_page():
-    return FileResponse("static/petugas.html")
+    return _serve_spa_or_legacy("static/petugas.html")
 
 @app.get("/camera")
 @app.get("/camera.html")
 def get_camera_page():
-    return FileResponse("static/camera.html")
+    return _serve_spa_or_legacy("static/camera.html")
 
 @app.get("/api/tasks")
 def get_tasks_api():

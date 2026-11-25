@@ -182,13 +182,24 @@ class PostgresDatabaseManager:
 
     def add_room(
         self,
-        room_code: str,
-        room_name: str,
-        building: str,
+        room_code: Any,
+        room_name: str = "",
+        building: str = "",
         floor_number: int = 1,
         room_type: str = "Fasilitas",
         status: str = "Aktif",
     ) -> int:
+        if isinstance(room_code, dict):
+            d = room_code
+            room_code = d.get("room_code") or d.get("id") or f"AST-{int(datetime.now().timestamp()) % 10000}"
+            room_name = d.get("room_name") or d.get("nama") or room_code
+            building = d.get("building") or d.get("gedung") or "Gedung Utama"
+            try:
+                floor_number = int(str(d.get("floor_number") or d.get("lantai") or 1).replace("Lantai", "").strip() or 1)
+            except Exception:
+                floor_number = 1
+            room_type = d.get("room_type") or d.get("kategori") or "Fasilitas"
+            status = d.get("status") or "Aktif"
         with self.get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(

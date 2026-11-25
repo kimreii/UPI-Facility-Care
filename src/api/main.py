@@ -30,12 +30,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Inisialisasi Modul AI dan Database (Otomatis pilih PostgreSQL di Cloud/Railway atau SQL Server di Lokal)
 analyzer = FacilityAnalyzer(model_path=os.getenv("MODEL_PATH", "models/yolov8n.pt"))
-if os.getenv("DATABASE_URL"):
+pg_url = os.getenv("DATABASE_URL") or os.getenv("DATABASE_PRIVATE_URL")
+if pg_url:
     from src.database.pg_manager import PostgresDatabaseManager
-    db_manager = PostgresDatabaseManager(os.getenv("DATABASE_URL"))
+    db_manager = PostgresDatabaseManager(pg_url)
 else:
-    from src.database.db_manager import DatabaseManager
-    db_manager = DatabaseManager()
+    try:
+        from src.database.db_manager import DatabaseManager
+        db_manager = DatabaseManager()
+    except ImportError:
+        from src.database.sqlite_manager import SQLiteDatabaseManager
+        db_manager = SQLiteDatabaseManager()
 
 WEB_DIST_DIR = os.path.join("mobile-app", "dist")
 

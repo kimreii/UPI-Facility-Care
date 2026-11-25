@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 import psycopg2
@@ -12,11 +13,18 @@ class PostgresDatabaseManager:
     """
 
     def __init__(self, database_url: Optional[str] = None):
-        raw_url = database_url or os.getenv("DATABASE_URL", "")
+        raw_url = database_url or os.getenv("DATABASE_URL", "") or os.getenv("DATABASE_PRIVATE_URL", "")
         if raw_url.startswith("postgres://"):
             raw_url = raw_url.replace("postgres://", "postgresql://", 1)
         self.database_url = raw_url
-        self._init_schema()
+        for attempt in range(5):
+            try:
+                self._init_schema()
+                break
+            except Exception as e:
+                print(f"[PG_INIT] Percobaan {attempt + 1}/5 gagal: {e}")
+                if attempt < 4:
+                    time.sleep(2)
 
     def get_connection(self):
         return psycopg2.connect(self.database_url)

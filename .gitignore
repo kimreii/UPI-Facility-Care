@@ -1,0 +1,11 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+mobile-app/node_modules/
+mobile-app/.expo/
+cloudflared.exe
+models/waste_yolov8.pt
+models/litter_yolov8.pt
+*.log
+.env

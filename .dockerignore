@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+mobile-app/node_modules/
+mobile-app/.expo/
+mobile-app/app/
+mobile-app/src/
+mobile-app/assets/
+cloudflared.exe
+*.log
+.env

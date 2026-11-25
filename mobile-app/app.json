@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "UPI Facility Care",
+    "slug": "upi-facility-care",
+    "version": "1.0.0",
+    "scheme": "upi-facility-care",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.upi.facilitycare"
+    },
+    "android": {
+      "package": "com.upi.facilitycare",
+      "adaptiveIcon": {
+        "backgroundColor": "#174bb8",
+        "foregroundImage": "./assets/icon.png"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        { "cameraPermission": "Izinkan UPI Facility Care menggunakan kamera untuk inspeksi AI." }
+      ],
+      [
+        "expo-image-picker",
+        { "photosPermission": "Izinkan UPI Facility Care mengakses galeri foto untuk bukti pekerjaan." }
+      ]
+    ]
+  }
+}
+

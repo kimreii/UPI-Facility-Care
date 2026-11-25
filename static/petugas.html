@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Dashboard User | UPI Facility Care</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-page="petugas" class="petugas-body">
+  <!-- Desktop Simulator Bar (Sesuai Mockup Figma "Dashboard User") -->
+  <header class="mockup-studio-bar">
+    <div class="mockup-frame-title">Dashboard User</div>
+    <div class="mockup-quick-links">
+      <span class="studio-badge">● UI Petugas Terhubung</span>
+      <a href="index.html" class="studio-link">Ganti Peran</a>
+      <a href="admin.html" class="studio-link">Admin Dashboard</a>
+      <a href="camera.html" target="_blank" class="studio-link studio-link-camera">📹 Live Camera AI HUD</a>
+    </div>
+  </header>
+
+  <!-- Mobile Viewport Wrapper -->
+  <div class="mobile-device-wrapper">
+    <div class="mobile-phone-frame">
+      <!-- 1. Device Status Bar (Mockup 9:41, Signal, Wifi, Battery) -->
+      <div class="device-status-bar" aria-hidden="true">
+        <span class="status-clock">9:41</span>
+        <div class="status-icons">
+          <!-- Cellular 4 bars -->
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="#111827">
+            <rect x="0" y="9" width="3" height="3" rx="0.5"/>
+            <rect x="4.5" y="6" width="3" height="6" rx="0.5"/>
+            <rect x="9" y="3" width="3" height="9" rx="0.5"/>
+            <rect x="13.5" y="0" width="3" height="12" rx="0.5"/>
+          </svg>
+          <!-- Wi-Fi -->
+          <svg width="16" height="12" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+            <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+            <circle cx="12" cy="20" r="1.5" fill="#111827"/>
+          </svg>
+          <!-- Battery -->
+          <svg width="24" height="12" viewBox="0 0 24 12" fill="none">
+            <rect x="1" y="1" width="19" height="10" rx="3" stroke="#111827" stroke-width="1.8"/>
+            <rect x="3" y="3" width="12" height="6" rx="1.2" fill="#111827"/>
+            <path d="M22 4.5v3" stroke="#111827" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Main Scrollable Content Area -->
+      <main class="mobile-content-area main-content">
+        <!-- ======================================================== -->
+        <!-- VIEW 1: WORK ORDER DASHBOARD (PERSIS MOCKUP DESAIN USER)  -->
+        <!-- ======================================================== -->
+        <section class="app-view active" id="worker-tasks">
+          <!-- Header: Date, Work Order, Subtitle, & Profile Circle -->
+          <div class="mockup-header-section">
+            <div class="header-texts">
+              <p class="worker-date" id="worker-date">Rabu, 07 Oktober 2026</p>
+              <h1 class="worker-title">Work Order</h1>
+              <p class="worker-subtitle">Berikut ringkasan kondisi fasilitas kampus hari ini.</p>
+            </div>
+            <button type="button" class="profile-circle-btn" id="btn-profile-toggle" title="Profil Petugas & Pilihan Demo" aria-label="Buka profil petugas">
+            </button>
+          </div>
+
+          <!-- Quick Dropdown Akun Petugas (Toggled by Avatar) -->
+          <div class="profile-popover" id="profile-popover" hidden>
+            <div class="popover-arrow"></div>
+            <div class="popover-content">
+              <strong>Rian (Petugas Kebersihan)</strong>
+              <small>Fasilitas Gedung A & Kampus UPI</small>
+              <div class="field select-petugas" style="margin-top: 8px;">
+                <label for="filter-petugas" style="font-size: 11px; font-weight: 700;">Ganti Akun Demo:</label>
+                <select id="filter-petugas" style="font-size: 12px; padding: 4px 8px; border-radius: 6px; width: 100%;">
+                  <option value="Petugas 1" selected>Petugas 1</option>
+                  <option value="Petugas 2">Petugas 2</option>
+                  <option value="Petugas 3">Petugas 3</option>
+                </select>
+              </div>
+              <div style="margin-top: 10px; display: flex; gap: 8px;">
+                <a href="index.html" class="btn btn-outline" style="font-size: 11px; padding: 4px 8px; flex: 1; text-align: center;">Ganti Peran</a>
+                <button type="button" class="btn btn-primary" id="close-popover" style="font-size: 11px; padding: 4px 8px;">Tutup</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Input Bar -->
+          <div class="mockup-search-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="search" id="worker-task-search" placeholder="Cari tipe tugas (nama, lokasi, jenis...)" autocomplete="off">
+          </div>
+
+          <!-- Filter Pills Row (Semua 3, Baru 3, Proses 1, Selesai 1) -->
+          <div class="mockup-pills-row" role="group" aria-label="Filter status tugas">
+            <button type="button" class="mockup-pill active" data-task-filter="Semua">
+              <span class="pill-label">Semua</span>
+              <span class="pill-badge" id="count-all">3</span>
+            </button>
+            <button type="button" class="mockup-pill" data-task-filter="Baru">
+              <span class="pill-label">Baru</span>
+              <span class="pill-badge" id="count-new">3</span>
+            </button>
+            <button type="button" class="mockup-pill" data-task-filter="Diproses">
+              <span class="pill-label">Proses</span>
+              <span class="pill-badge" id="count-process">1</span>
+            </button>
+            <button type="button" class="mockup-pill" data-task-filter="Selesai">
+              <span class="pill-label">Selesai</span>
+              <span class="pill-badge" id="count-done">1</span>
+            </button>
+          </div>
+
+          <!-- Section Heading: Daftar Tugas -->
+          <div class="section-heading-row">
+            <h2 class="mockup-section-title">Daftar Tugas</h2>
+          </div>
+
+          <!-- List of 4 Task Cards (Populated by JS) -->
+          <div id="petugas-task-list" class="mockup-task-list"></div>
+
+          <!-- Empty State -->
+          <div id="petugas-empty" class="mockup-empty-card" hidden>
+            <p>Belum ada tugas untuk filter yang dipilih.</p>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 2: PINDAI QR CODE (SCANNER)                         -->
+        <!-- ======================================================== -->
+        <section class="app-view" id="worker-qr">
+          <div class="view-header-bar">
+            <button class="nav-back-btn" type="button" data-workflow-back="worker-tasks">‹ Kembali</button>
+            <h2 class="view-header-title">Pindai QR Aset</h2>
+          </div>
+
+          <div class="subview-panel">
+            <p class="qr-instruction">Posisikan kode QR fasilitas di dalam bingkai kamera untuk memindai otomatis.</p>
+            <div class="camera-frame">
+              <video id="qr-video" playsinline muted></video>
+              <div class="camera-placeholder" id="camera-placeholder">
+                <span class="camera-placeholder-icon">▦</span>
+                <p>Kamera belum aktif</p>
+              </div>
+            </div>
+            <p class="camera-status" id="camera-status" role="status">Tekan tombol di bawah untuk membuka kamera scanner.</p>
+            <div class="camera-actions-row">
+              <button class="btn btn-primary" id="start-camera" type="button">Buka Kamera</button>
+              <button class="btn btn-outline" id="stop-camera" type="button" hidden>Matikan Kamera</button>
+            </div>
+
+            <!-- Manual QR Input -->
+            <div class="qr-manual-box">
+              <label for="asset-code-input" class="manual-label">Atau masukkan kode QR secara manual:</label>
+              <div class="inline-code-input">
+                <input id="asset-code-input" placeholder="Contoh: AST-001" autocomplete="off">
+                <button class="btn btn-outline" id="lookup-asset" type="button">Cari</button>
+              </div>
+              <!-- Quick Select Buttons for Demo -->
+              <div class="quick-asset-pills">
+                <button type="button" class="quick-pill" onclick="document.getElementById('asset-code-input').value='AST-001';document.getElementById('lookup-asset').click();">AST-001 Toilet</button>
+                <button type="button" class="quick-pill" onclick="document.getElementById('asset-code-input').value='AST-002';document.getElementById('lookup-asset').click();">AST-002 Koridor</button>
+                <button type="button" class="quick-pill" onclick="document.getElementById('asset-code-input').value='AST-003';document.getElementById('lookup-asset').click();">AST-003 Pustaka</button>
+                <button type="button" class="quick-pill" onclick="document.getElementById('asset-code-input').value='AST-004';document.getElementById('lookup-asset').click();">AST-004 Ballroom</button>
+              </div>
+            </div>
+
+            <div id="asset-result" class="asset-result-box" hidden></div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 3: CHECKLIST KEBERSIHAN                             -->
+        <!-- ======================================================== -->
+        <section class="app-view" id="worker-checklist">
+          <div class="view-header-bar">
+            <button class="nav-back-btn" type="button" data-workflow-back="worker-tasks">‹ Kembali</button>
+            <h2 class="view-header-title">Checklist Kebersihan</h2>
+          </div>
+
+          <div class="subview-panel">
+            <span class="workflow-step-badge">LANGKAH 3 DARI 6</span>
+            <div id="checklist-asset-info" class="workflow-asset-card">
+              Pindai QR aset yang ditugaskan terlebih dahulu.
+            </div>
+            <p class="muted" style="margin-bottom: 12px; font-size: 12px;">Centang seluruh kondisi setelah fasilitas dibersihkan:</p>
+            <div id="checklist-items" class="checklist-items-group"></div>
+            
+            <label class="field" style="margin-top: 14px;">
+              <span style="font-size: 12px; font-weight: 700;">Catatan petugas (opsional)</span>
+              <textarea id="workflow-note" rows="2" placeholder="Tuliskan catatan kondisi fasilitas..."></textarea>
+            </label>
+
+            <button class="btn btn-primary" id="continue-to-photo" type="button" disabled style="margin-top: 14px; width: 100%;">
+              Lanjut ke Foto Bukti & Verifikasi AI →
+            </button>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 4: FOTO BUKTI & AI COMPUTER VISION                  -->
+        <!-- ======================================================== -->
+        <section class="app-view" id="worker-photo">
+          <div class="view-header-bar">
+            <button class="nav-back-btn" type="button" data-workflow-back="worker-checklist">‹ Kembali</button>
+            <h2 class="view-header-title">Foto Bukti & AI</h2>
+          </div>
+
+          <div class="subview-panel">
+            <span class="workflow-step-badge">LANGKAH 4 DARI 6</span>
+            <p class="muted" style="font-size: 12px; margin-bottom: 12px;">
+              Ambil foto fasilitas untuk diverifikasi otomatis oleh model AI YOLOv8.
+            </p>
+
+            <div class="camera-frame workflow-camera-frame">
+              <video id="evidence-video" playsinline muted></video>
+              <div id="evidence-placeholder" class="camera-placeholder">
+                <span class="camera-placeholder-icon">📷</span>
+                <p>Kamera belum aktif</p>
+              </div>
+            </div>
+            <canvas id="evidence-canvas" hidden></canvas>
+            <img id="evidence-preview" class="photo-preview" alt="Pratinjau foto bukti" hidden>
+            <p id="evidence-status" class="camera-status" role="status">Kamera siap digunakan.</p>
+
+            <div class="camera-actions-row">
+              <button class="btn btn-primary" id="start-evidence-camera" type="button">Buka Kamera</button>
+              <button class="btn btn-outline" id="capture-evidence" type="button" disabled>Ambil Foto</button>
+            </div>
+
+            <button class="btn btn-primary ai-check-btn" id="analyze-evidence" type="button" disabled style="margin-top: 12px; width: 100%;">
+              🤖 Periksa dengan AI Computer Vision
+            </button>
+
+            <a href="camera.html" target="_blank" class="btn btn-outline" style="margin-top: 8px; text-align: center; display: block; font-size: 12px; font-weight: 600;">
+              📹 Buka Live Camera AI HUD (Layar Penuh)
+            </a>
+
+            <div id="ai-result" class="ai-result-box" hidden></div>
+
+            <button class="btn btn-primary" id="save-workflow" type="button" disabled style="margin-top: 14px; width: 100%;">
+              Simpan Hasil Pekerjaan Selesai
+            </button>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 5: PELAPORAN KERUSAKAN & RIWAYAT KERJA              -->
+        <!-- ======================================================== -->
+        <section class="app-view" id="worker-reports">
+          <div class="view-header-bar">
+            <button class="nav-back-btn" type="button" data-workflow-back="worker-tasks">‹ Kembali</button>
+            <h2 class="view-header-title">Pelaporan & Riwayat</h2>
+          </div>
+
+          <div class="subview-panel">
+            <h3 style="font-size: 15px; font-weight: 800; margin-bottom: 6px;">Perbarui Status / Lapor Kerusakan</h3>
+            <p class="muted" style="font-size: 12px; margin-bottom: 12px;">Pilih tugas pada kartu atau isi formulir di bawah ini.</p>
+
+            <form id="update-form" class="form-grid">
+              <input type="hidden" id="update-id">
+
+              <div class="field full-width">
+                <label for="update-judul">Tugas yang dipilih</label>
+                <input id="update-judul" readonly placeholder="Pilih tugas dari daftar work order">
+              </div>
+
+              <div class="field">
+                <label for="update-status">Status pekerjaan</label>
+                <select id="update-status" required>
+                  <option>Menunggu</option>
+                  <option>Diproses</option>
+                  <option>Selesai</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="foto">Foto bukti pekerjaan</label>
+                <input type="file" id="foto" accept="image/*">
+              </div>
+
+              <div class="field full-width">
+                <label for="catatan">Catatan pekerjaan</label>
+                <textarea id="catatan" rows="3" placeholder="Contoh: Toilet sudah dibersihkan dan dipel rapi..."></textarea>
+              </div>
+
+              <div class="field full-width" id="preview-wrapper" hidden>
+                <label>Pratinjau foto</label>
+                <img id="foto-preview" class="photo-preview" alt="Foto bukti">
+              </div>
+
+              <div class="full-width form-actions">
+                <button class="btn btn-primary" type="submit" style="width: 100%;">
+                  Simpan Laporan
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="subview-panel" style="margin-top: 14px;">
+            <h3 style="font-size: 15px; font-weight: 800; margin-bottom: 6px;">Riwayat Pekerjaan Petugas</h3>
+            <p class="muted" style="font-size: 12px; margin-bottom: 12px;">Pekerjaan yang telah diselesaikan akan tercantum di sini.</p>
+            <div id="worker-report-history" class="task-grid"></div>
+          </div>
+        </section>
+      </main>
+
+      <!-- ======================================================== -->
+      <!-- BOTTOM NAVIGATION BAR (PERSIS MOCKUP: TUGAS - QR - LAPORAN)-->
+      <!-- ======================================================== -->
+      <nav class="mockup-bottom-nav" aria-label="Navigasi Petugas">
+        <!-- 1. Tab Tugas -->
+        <button type="button" class="bottom-nav-item active" data-view="worker-tasks">
+          <div class="active-indicator-bar"></div>
+          <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+          <span class="nav-label">Tugas</span>
+        </button>
+
+        <!-- 2. Tab QR Center Floating Button -->
+        <div class="bottom-nav-qr-wrapper">
+          <button type="button" class="qr-floating-btn" data-view="worker-qr" aria-label="Pindai QR Aset">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 8V5a1 1 0 0 1 1-1h3"/>
+              <path d="M16 4h3a1 1 0 0 1 1 1v3"/>
+              <path d="M20 16v3a1 1 0 0 1-1 1h-3"/>
+              <path d="M8 20H5a1 1 0 0 1-1-1v-3"/>
+              <circle cx="12" cy="12" r="2.5" fill="#111827"/>
+            </svg>
+          </button>
+          <span class="qr-label">QR</span>
+        </div>
+
+        <!-- 3. Tab Pelaporan -->
+        <button type="button" class="bottom-nav-item" data-view="worker-reports">
+          <div class="active-indicator-bar"></div>
+          <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="8" y1="13" x2="14" y2="13"/>
+            <line x1="8" y1="17" x2="16" y2="17"/>
+            <line x1="16" y1="12" x2="18" y2="10"/>
+          </svg>
+          <span class="nav-label">Pelaporan</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    // Inisialisasi popover profil
+    const profileBtn = document.getElementById('btn-profile-toggle');
+    const popover = document.getElementById('profile-popover');
+    const closePopover = document.getElementById('close-popover');
+    if (profileBtn && popover) {
+      profileBtn.addEventListener('click', () => {
+        popover.hidden = !popover.hidden;
+      });
+      if (closePopover) {
+        closePopover.addEventListener('click', () => {
+          popover.hidden = true;
+        });
+      }
+    }
+  </script>
+</body>
+</html>

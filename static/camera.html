@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Campus Facility AI Vision</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green: #10b981;
+            --red: #ef4444;
+            --yellow: #f59e0b;
+            --blue: #38bdf8;
+            --bg-dark: #0a0e1a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #fff;
+        }
+
+        /* Viewport Kamera Layar Penuh (Edge-to-Edge) */
+        .camera-screen {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Video, Canvas, & Gambar Tampilan */
+        video, canvas, #laptopStream, #previewImg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        canvas {
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Placeholder jika kamera live HTTP terhalang izin browser */
+        .camera-standby-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #131b2e 0%, #080c14 100%);
+            z-index: 2;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .standby-icon {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+
+        .standby-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .standby-hint {
+            font-size: 0.88rem;
+            color: #94a3b8;
+            max-width: 300px;
+            line-height: 1.4;
+        }
+
+        /* Banner HUD Atas (Persis OpenCV Laptop) */
+        .hud-banner-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            pointer-events: none;
+            background: linear-gradient(180deg, rgba(10, 14, 26, 0.96) 0%, rgba(10, 14, 26, 0.75) 75%, transparent 100%);
+            padding: calc(env(safe-area-inset-top, 10px) + 8px) 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .hud-row-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .hud-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.92rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            padding: 5px 12px;
+            border-radius: 8px;
+            color: #fff;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+
+        .hud-status-badge.selesai {
+            background: var(--green);
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
+        }
+
+        .hud-status-badge.belum-selesai {
+            background: var(--red);
+            box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+        }
+
+        .hud-scores {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: right;
+        }
+
+        .hud-score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .hud-score-label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+        }
+
+        .hud-score-val {
+            font-size: 1.15rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .hud-row-sub {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 0.78rem;
+            color: #cbd5e1;
+        }
+
+        .hud-tags {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag-pill {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .tag-pill.trash { color: #fbbf24; border-color: rgba(251, 191, 36, 0.35); }
+        .tag-pill.stain { color: #f43f5e; border-color: rgba(244, 63, 94, 0.35); }
+        .tag-pill.water { color: #06b6d4; border-color: rgba(6, 182, 212, 0.35); }
+        .tag-pill.glass { color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); }
+        .tag-pill.damage { color: #f87171; border-color: rgba(248, 113, 113, 0.35); }
+
+        .hud-source-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        /* Notifikasi Toast */
+        .toast-msg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(16, 185, 129, 0.95);
+            color: #fff;
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+            max-width: 85%;
+        }
+
+        .toast-msg.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* Kontrol Kamera Bawah (Gaya Native HP) */
+        .camera-controls-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            pointer-events: auto;
+            background: linear-gradient(0deg, rgba(10, 14, 26, 0.96) 0%, rgba(10, 14, 26, 0.75) 75%, transparent 100%);
+            padding: 16px 20px calc(env(safe-area-inset-bottom, 16px) + 16px);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.12s ease, background 0.15s ease;
+        }
+
+        .icon-btn:active {
+            transform: scale(0.88);
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        /* Tombol Shutter Utama Bulat */
+        .shutter-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: transparent;
+            border: 4px solid #ffffff;
+            padding: 4px;
+            cursor: pointer;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.12s ease;
+        }
+
+        .shutter-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 0 14px rgba(255, 255, 255, 0.5);
+            transition: all 0.15s ease;
+        }
+
+        .shutter-btn:active {
+            transform: scale(0.92);
+        }
+
+        .shutter-btn:active .shutter-inner {
+            transform: scale(0.85);
+            background: var(--green);
+        }
+
+        /* Modal Riwayat Data SQL Server */
+        .history-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 14, 26, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            padding: calc(env(safe-area-inset-top, 16px) + 12px) 16px calc(env(safe-area-inset-bottom, 16px) + 16px);
+            animation: slideUp 0.25s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            margin-bottom: 12px;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 4px;
+        }
+
+        .history-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 12px;
+            transition: background 0.2s;
+        }
+
+        .history-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="camera-screen">
+        <!-- 1. Layer Standby / Bantuan jika WebRTC HTTP belum dibuka -->
+        <div id="standbyScreen" class="camera-standby-placeholder">
+            <div class="standby-icon">📷</div>
+            <div class="standby-title">Siap Inspeksi Fasilitas</div>
+            <div class="standby-hint">
+                Tekan <b>tombol bulat putih di bawah</b> untuk memotret ruangan, atau tekan tombol <b>💻</b> untuk streaming langsung dari kamera laptop.
+            </div>
+        </div>
+
+        <!-- 2. Layer Video Live Stream HP -->
+        <video id="videoElement" autoplay playsinline muted style="display: none;"></video>
+        <canvas id="overlayCanvas"></canvas>
+
+        <!-- 3. Layer Pratinjau Foto Terakhir Teranalisis -->
+        <img id="previewImg" alt="Hasil Foto" style="display: none;">
+
+        <!-- 4. Layer Stream Kamera Laptop (OpenCV) -->
+        <img id="laptopStream" alt="Laptop Stream" style="display: none;">
+
+        <!-- 5. Banner Status Atas (Mirip OpenCV di Laptop) -->
+        <div class="hud-banner-top" id="hudTop">
+            <div class="hud-row-main">
+                <div id="statusBadge" class="hud-status-badge selesai">
+                    STATUS: SELESAI
+                </div>
+                <div class="hud-scores">
+                    <div class="hud-score-item">
+                        <span class="hud-score-label">Kebersihan</span>
+                        <span id="scoreVal" class="hud-score-val" style="color: var(--green);">100%</span>
+                    </div>
+                    <div class="hud-score-item">
+                        <span class="hud-score-label">Kekotoran</span>
+                        <span id="dirtVal" class="hud-score-val" style="color: #60a5fa;">0%</span>
+                    </div>
+                    <div class="hud-score-item">
+                        <span class="hud-score-label">Kondisi Fisik</span>
+                        <span id="physVal" class="hud-score-val" style="color: var(--green);">100%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hud-row-sub">
+                <div class="hud-tags">
+                    <span class="tag-pill trash" id="trashTag">🗑️ 0 (Bebas Sampah)</span>
+                    <span class="tag-pill stain" id="stainTag">🧪 0 Noda</span>
+                    <span class="tag-pill water" id="waterTag">💧 0 Air</span>
+                    <span class="tag-pill glass" id="glassTag">🪞 0 Kaca</span>
+                    <span class="tag-pill damage" id="damageTag">⚠️ 0 Rusak</span>
+                    <span id="damageLevelBadge" style="font-size: 0.72rem; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); padding: 2px 7px; border-radius: 6px;">Aman</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; pointer-events: auto;">
+                    <span id="sourceBadge" class="hud-source-badge">📱 KAMERA HP</span>
+                    <button id="btnOpenHistory" onclick="openHistoryModal()" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; touch-action: manipulation;">
+                        📋 Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Modal Riwayat Data Inspeksi (Tarik dari SQL Server) -->
+        <div id="historyModal" class="history-modal" style="display: none;">
+            <div class="history-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.2rem;">📋</span>
+                    <div>
+                        <div style="font-weight: 800; font-size: 1.05rem;">Riwayat Data SQL Server</div>
+                        <div style="font-size: 0.72rem; color: #94a3b8;">Database: CampusFacilityDB (localhost\SQLEXPRESS)</div>
+                    </div>
+                </div>
+                <button onclick="closeHistoryModal()" style="background: rgba(255,255,255,0.15); border: none; color: #fff; font-size: 1.1rem; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <div style="text-align: center; color: #94a3b8; padding: 24px;">Memuat data...</div>
+            </div>
+        </div>
+
+        <!-- 7. Toast Notifikasi Pop-up -->
+        <div id="toast" class="toast-msg">
+            ✅ Notifikasi
+        </div>
+
+        <!-- 7. Kontrol Tombol Kamera Bawah -->
+        <div class="camera-controls-bottom" id="controlsBottom">
+            <!-- Ganti Kamera Belakang / Depan -->
+            <button class="icon-btn" id="btnFlipCam" onclick="switchCameraFacing()" title="Ganti Kamera">
+                🔄
+            </button>
+
+            <!-- Toggle Mirror Kamera -->
+            <button class="icon-btn" id="btnMirror" onclick="toggleMirror()" title="Mirror Kamera">
+                🪞
+            </button>
+
+            <!-- Tombol Shutter Ambil Foto & Analisis (BISA DI-TAP LANGSUNG) -->
+            <button class="shutter-btn" id="btnShutter" onclick="handleShutterClick()" title="Ambil Foto & Analisis">
+                <div class="shutter-inner"></div>
+            </button>
+
+            <!-- Switch Mode: Kamera HP vs Kamera Laptop -->
+            <button class="icon-btn" id="btnToggleSource" onclick="toggleCameraSource()" title="Ganti ke Kamera Laptop">
+                💻
+            </button>
+
+            <!-- Unggah Foto dari Galeri -->
+            <button class="icon-btn" id="btnGallery" onclick="triggerGalleryUpload()" title="Pilih dari Galeri">
+                📁
+            </button>
+        </div>
+
+        <!-- Input Kamera Native HP (Fallback otomatis jika browser memblokir WebRTC HTTP) -->
+        <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageFile(event)">
+        <!-- Input File Galeri -->
+        <input type="file" id="galleryInput" accept="image/*" style="display:none;" onchange="handleImageFile(event)">
+    </div>
+
+    <script>
+        const video = document.getElementById('videoElement');
+        const canvas = document.getElementById('overlayCanvas');
+        const ctx = canvas.getContext('2d');
+        const previewImg = document.getElementById('previewImg');
+        const laptopStream = document.getElementById('laptopStream');
+        const standbyScreen = document.getElementById('standbyScreen');
+        const toast = document.getElementById('toast');
+        const nativeCameraInput = document.getElementById('nativeCameraInput');
+        const galleryInput = document.getElementById('galleryInput');
+
+        // Elemen HUD
+        const statusBadge = document.getElementById('statusBadge');
+        const scoreVal = document.getElementById('scoreVal');
+        const dirtVal = document.getElementById('dirtVal');
+        const physVal = document.getElementById('physVal');
+        const trashTag = document.getElementById('trashTag');
+        const stainTag = document.getElementById('stainTag');
+        const waterTag = document.getElementById('waterTag');
+        const glassTag = document.getElementById('glassTag');
+        const damageTag = document.getElementById('damageTag');
+        const damageLevelBadge = document.getElementById('damageLevelBadge');
+        const sourceBadge = document.getElementById('sourceBadge');
+        const btnToggleSource = document.getElementById('btnToggleSource');
+
+        let isStreaming = false;
+        let videoStream = null;
+        let scanInterval = null;
+        let isScanning = false;
+        let isMirrored = false;
+        let facingMode = 'environment';
+        let currentSource = 'phone'; // 'phone' | 'laptop'
+
+        // 1. Inisialisasi saat halaman dibuka
+        window.addEventListener('DOMContentLoaded', () => {
+            initLiveCamera();
+        });
+
+        async function initLiveCamera() {
+            // Cek apakah browser mendukung getUserMedia
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.log('Live WebRTC tidak aktif di HTTP (Normal pada browser HP). Menggunakan mode Kamera Native.');
+                standbyScreen.style.display = 'flex';
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+
+                videoStream = stream;
+                video.srcObject = stream;
+                video.style.display = 'block';
+                standbyScreen.style.display = 'none';
+                previewImg.style.display = 'none';
+                isStreaming = true;
+
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                };
+
+                if (scanInterval) clearInterval(scanInterval);
+                scanInterval = setInterval(sendLiveFrame, 1000);
+            } catch (e) {
+                console.log('Browser HP memerlukan input native capture:', e.message);
+                standbyScreen.style.display = 'flex';
+            }
+        }
+
+        // 2. Klik Tombol Shutter Utama (Bulat Besar)
+        function handleShutterClick() {
+            // Berikan getaran haptik jika didukung HP
+            if (navigator.vibrate) navigator.vibrate(40);
+
+            if (currentSource === 'laptop') {
+                showToast('💻 Kamera laptop sedang streaming aktif');
+                return;
+            }
+
+            // Jika sedang live stream video WebRTC:
+            if (isStreaming && video.videoWidth > 0) {
+                captureLiveVideoFrame();
+            } else {
+                // Jika live stream tidak aktif (misal dibatasi HTTP di HP),
+                // langsung buka kamera bawaan HP untuk jepret foto!
+                nativeCameraInput.click();
+            }
+        }
+
+        function triggerGalleryUpload() {
+            if (navigator.vibrate) navigator.vibrate(30);
+            galleryInput.click();
+        }
+
+        // Ambil frame dari live stream video
+        async function captureLiveVideoFrame() {
+            showToast('📸 Mengambil snapshot & menganalisis...');
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            if (isMirrored) {
+                tempCtx.translate(tempCanvas.width, 0);
+                tempCtx.scale(-1, 1);
+            }
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            tempCanvas.toBlob(blob => {
+                if (blob) uploadAndInspect(blob);
+            }, 'image/jpeg', 0.92);
+        }
+
+        // Tangani hasil jepretan kamera native atau upload file
+        function handleImageFile(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            showToast('⏳ AI sedang menganalisis foto...');
+            uploadAndInspect(file);
+            e.target.value = ''; // Reset input agar bisa dipakai berulang
+        }
+
+        // Upload ke Server API & Database SQL Server
+        async function uploadAndInspect(fileOrBlob) {
+            const formData = new FormData();
+            formData.append('room_id', '1');
+            formData.append('file', fileOrBlob, 'inspection.jpg');
+            formData.append('notes', 'Inspeksi Kamera HP');
+
+            try {
+                const res = await fetch('/api/inspect', { method: 'POST', body: formData });
+                const d = await res.json();
+                if (d.success) {
+                    // Tampilkan gambar hasil anotasi
+                    previewImg.src = d.annotated_image_url + '?t=' + Date.now();
+                    previewImg.style.display = 'block';
+                    standbyScreen.style.display = 'none';
+                    if (video.style.display === 'block') video.style.display = 'none';
+
+                    // Update HUD banner
+                    updateHUD(d);
+                    showToast(`✅ Status: ${d.status} | Skor: ${d.cleanliness_percentage}%`);
+                } else {
+                    showToast('⚠️ Gagal: ' + (d.detail || 'Error server'));
+                }
+            } catch (err) {
+                showToast('❌ Gagal menghubungi server: ' + err.message);
+            }
+        }
+
+        // 3. Update Tampilan Banner HUD Atas
+        function updateHUD(data) {
+            const cleanScore = data.cleanliness_percentage;
+            const dirtScore = data.dirtiness_percentage;
+            const physScore = data.physical_condition_percentage !== undefined ? data.physical_condition_percentage : 100.0;
+            const dmgLevel = data.damage_level || 'Aman / Sangat Baik';
+
+            if (cleanScore > 50.0 && physScore > 15.0) {
+                statusBadge.className = 'hud-status-badge selesai';
+                statusBadge.innerText = 'STATUS: SELESAI';
+                scoreVal.style.color = 'var(--green)';
+            } else {
+                statusBadge.className = 'hud-status-badge belum-selesai';
+                statusBadge.innerText = 'STATUS: BELUM SELESAI';
+                scoreVal.style.color = 'var(--red)';
+            }
+
+            scoreVal.innerText = `${cleanScore}%`;
+            dirtVal.innerText = `${dirtScore}%`;
+            physVal.innerText = `${physScore}%`;
+
+            // Atur warna indikator kondisi fisik (0-15% Rusak Banget)
+            if (physScore <= 15.0) {
+                physVal.style.color = '#ef4444';
+                damageLevelBadge.style.color = '#fff';
+                damageLevelBadge.style.background = '#ef4444';
+                damageLevelBadge.style.borderColor = '#dc2626';
+            } else if (physScore <= 60.0) {
+                physVal.style.color = '#f59e0b';
+                damageLevelBadge.style.color = '#fbbf24';
+                damageLevelBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                damageLevelBadge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+            } else {
+                physVal.style.color = 'var(--green)';
+                damageLevelBadge.style.color = '#10b981';
+                damageLevelBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+                damageLevelBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+            }
+
+            damageLevelBadge.innerText = dmgLevel;
+            const trashVol = data.trash_volume_status || (data.total_trash > 0 ? `${data.total_trash} Sampah` : 'Bebas Sampah');
+            trashTag.innerText = `🗑️ ${data.total_trash || 0} (${trashVol})`;
+            stainTag.innerText = `🧪 ${(data.total_stains || 0) + (data.total_footprints || 0)} Noda`;
+            waterTag.innerText = `💧 ${data.total_water_splashes || 0} Air`;
+            glassTag.innerText = `🪞 ${data.total_glass_stains || 0} Kaca`;
+            damageTag.innerText = `⚠️ ${data.total_defects || 0} Rusak`;
+        }
+
+        // 4. Kirim Frame Live Video ke API Scan
+        async function sendLiveFrame() {
+            if (!isStreaming || isScanning || video.videoWidth === 0 || currentSource !== 'phone') return;
+            isScanning = true;
+
+            try {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = video.videoWidth;
+                tempCanvas.height = video.videoHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                if (isMirrored) {
+                    tempCtx.translate(tempCanvas.width, 0);
+                    tempCtx.scale(-1, 1);
+                }
+                tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                tempCanvas.toBlob(async (blob) => {
+                    if (!blob) { isScanning = false; return; }
+                    const formData = new FormData();
+                    formData.append('file', blob, 'frame.jpg');
+
+                    try {
+                        const res = await fetch('/api/analyze-frame', { method: 'POST', body: formData });
+                        const data = await res.json();
+                        if (data.success) {
+                            renderCanvasBoxes(data);
+                            updateHUD(data);
+                        }
+                    } catch (e) {
+                        // ignore error per frame
+                    } finally {
+                        isScanning = false;
+                    }
+                }, 'image/jpeg', 0.85);
+
+            } catch (err) {
+                isScanning = false;
+            }
+        }
+
+        // Gambar Kotak Deteksi di atas Video
+        function renderCanvasBoxes(data) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (data.detections && data.detections.length > 0) {
+                data.detections.forEach(item => {
+                    // Abaikan deteksi orang
+                    if (item.category === 'Person') return;
+
+                    const b = item.bbox;
+                    const cat = item.category;
+                    const cname = (item.class_name || '').toLowerCase();
+
+                    let color = '#38bdf8'; // Default Facility
+                    let prefix = '[Barang] ';
+
+                    if (cat === 'Damage') {
+                        color = '#ef4444'; // Merah Kerusakan Fisik
+                        prefix = '[Rusak] ';
+                    } else if (cat === 'Cleanliness') {
+                        if (cname.includes('darah')) {
+                            color = '#e11d48'; // Crimson Merah Darah
+                            prefix = '[Noda] ';
+                        } else if (cname.includes('urin') || cname.includes('pipis')) {
+                            color = '#eab308'; // Kuning Urin
+                            prefix = '[Kotor] ';
+                        } else if (cname.includes('jejak kaki')) {
+                            color = '#b45309'; // Cokelat Jejak Kaki
+                            prefix = '[Kotor] ';
+                        } else if (cname.includes('percikan air')) {
+                            color = '#06b6d4'; // Cyan Air
+                            prefix = '[Basah] ';
+                        } else if (cname.includes('kaca') || cname.includes('bercak')) {
+                            color = '#7dd3fc'; // Ice Blue Kaca Kotor
+                            prefix = '[Noda Kaca] ';
+                        } else {
+                            color = '#f59e0b'; // Oranye Sampah Umum
+                            prefix = '[Sampah] ';
+                        }
+                    }
+
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = color;
+                    ctx.strokeRect(b.x, b.y, b.width, b.height);
+
+                    const label = `${prefix}${item.class_name} (${Math.round(item.confidence * 100)}%)`;
+                    ctx.font = 'bold 13px Outfit, sans-serif';
+                    const textWidth = ctx.measureText(label).width;
+
+                    ctx.fillStyle = color;
+                    ctx.fillRect(b.x, Math.max(0, b.y - 22), textWidth + 10, 22);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(label, b.x + 5, Math.max(15, b.y - 6));
+                });
+            }
+        }
+
+        // 5. Ganti Sumber: Kamera HP vs Streaming Kamera Laptop
+        function toggleCameraSource() {
+            if (navigator.vibrate) navigator.vibrate(30);
+
+            if (currentSource === 'phone') {
+                currentSource = 'laptop';
+                if (videoStream) {
+                    videoStream.getTracks().forEach(t => t.stop());
+                    isStreaming = false;
+                }
+                video.style.display = 'none';
+                canvas.style.display = 'none';
+                previewImg.style.display = 'none';
+                standbyScreen.style.display = 'none';
+
+                laptopStream.src = '/api/laptop-stream?t=' + Date.now();
+                laptopStream.style.display = 'block';
+
+                sourceBadge.innerText = '💻 KAMERA LAPTOP';
+                btnToggleSource.innerText = '📱';
+                btnToggleSource.title = 'Ganti ke Kamera HP';
+                showToast('Mode: Streaming Kamera Laptop (OpenCV)');
+            } else {
+                currentSource = 'phone';
+                laptopStream.style.display = 'none';
+                laptopStream.src = '';
+                canvas.style.display = 'block';
+
+                sourceBadge.innerText = '📱 KAMERA HP';
+                btnToggleSource.innerText = '💻';
+                btnToggleSource.title = 'Ganti ke Kamera Laptop';
+                showToast('Mode: Kamera HP');
+                initLiveCamera();
+            }
+        }
+
+        // 6. Ganti Depan / Belakang
+        function switchCameraFacing() {
+            if (navigator.vibrate) navigator.vibrate(30);
+            facingMode = (facingMode === 'environment') ? 'user' : 'environment';
+            if (isStreaming) {
+                if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+                isStreaming = false;
+                initLiveCamera();
+            }
+            showToast(facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan');
+        }
+
+        // 7. Toggle Mirror
+        function toggleMirror() {
+            if (navigator.vibrate) navigator.vibrate(30);
+            isMirrored = !isMirrored;
+            const t = isMirrored ? 'scaleX(-1)' : 'scaleX(1)';
+            video.style.transform = t;
+            canvas.style.transform = t;
+            previewImg.style.transform = t;
+            showToast(isMirrored ? 'Mirror: Aktif' : 'Mirror: Nonaktif');
+        }
+
+        // 8. Toast Helper
+        function showToast(text) {
+            toast.innerText = text;
+            toast.classList.add('show');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // 9. Modal Riwayat Data Inspeksi (Tarik dari SQL Server)
+        async function openHistoryModal() {
+            if (navigator.vibrate) navigator.vibrate(30);
+            const modal = document.getElementById('historyModal');
+            const list = document.getElementById('historyList');
+            modal.style.display = 'flex';
+            list.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 32px;">⏳ Mengambil data dari SQL Server...</div>';
+
+            try {
+                const res = await fetch('/api/inspections');
+                const json = await res.json();
+                if (!json.success || !json.data || json.data.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 36px; line-height: 1.6;">Belum ada riwayat data inspeksi di SQL Server.<br><br>💡 Tekan tombol bulat putih untuk memotret & menyimpan data pertama Anda!</div>';
+                    return;
+                }
+
+                list.innerHTML = json.data.map(item => {
+                    const isCompleted = item.cleanliness_percentage > 50;
+                    return `
+                        <div class="history-card">
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                                <img src="${item.image_url}" alt="Foto SQL" style="width: 76px; height: 76px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: #000;" onclick="window.open('${item.image_url}', '_blank')">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.room_name || 'Ruangan #' + item.room_id}</span>
+                                        <span class="tag-pill" style="background: ${isCompleted ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${isCompleted ? '#34d399' : '#f87171'}; border-color: ${isCompleted ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'};">
+                                            ${item.status}
+                                        </span>
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 4px;">
+                                        Skor: <b>${item.cleanliness_percentage}%</b> | 🗑️ ${item.total_trash} | ⚠️ ${item.total_defects}
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: #94a3b8;">
+                                        🕒 ${item.inspection_date}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                list.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 24px;">Gagal memuat: ${e.message}</div>`;
+            }
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

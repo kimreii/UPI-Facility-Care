@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrator | UPI Facility Care</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-page="admin">
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <span class="brand-icon small">U</span>
+      <span>UPI Facility Care</span>
+    </a>
+    <a class="logout-link" href="index.html">Ganti Peran ↗</a>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <p class="sidebar-label">MENU UTAMA</p>
+      <button class="nav-link active" type="button" data-view="admin-dashboard">Dashboard</button>
+      <button class="nav-link" type="button" data-view="admin-assets">Daftar Aset</button>
+      <button class="nav-link" type="button" data-view="admin-calendar">Kalender</button>
+      <button class="nav-link" type="button" data-view="admin-workorders">Work Order</button>
+      <button class="nav-link" type="button" data-view="admin-reports">Laporan</button>
+
+      <div class="sidebar-bottom">
+        <div class="avatar">A</div>
+        <div>
+          <strong>Administrator</strong>
+          <small>Pengelola fasilitas</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="app-view active" id="admin-dashboard">
+      <section id="dashboard">
+        <p class="eyebrow">ADMINISTRATOR / DASHBOARD</p>
+        <h1>Dashboard Fasilitas</h1>
+        <p class="muted">
+          Pantau dan kelola kebersihan fasilitas kampus dalam satu tempat.
+        </p>
+
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>Total Tugas</span>
+            <strong id="total-tugas">0</strong>
+            <small>Seluruh pekerjaan</small>
+          </article>
+          <article class="stat-card">
+            <span>Menunggu</span>
+            <strong id="total-menunggu">0</strong>
+            <small>Belum dikerjakan</small>
+          </article>
+          <article class="stat-card">
+            <span>Diproses</span>
+            <strong id="total-proses">0</strong>
+            <small>Sedang dikerjakan</small>
+          </article>
+          <article class="stat-card">
+            <span>Selesai</span>
+            <strong id="total-selesai">0</strong>
+            <small>Pekerjaan selesai</small>
+          </article>
+        </div>
+      </section>
+
+      </div>
+      <div class="app-view" id="admin-assets">
+        <section class="panel"><h1>Daftar Aset</h1><p class="muted">Data aset yang dikenali melalui kode QR.</p><div id="admin-asset-list" class="task-grid"></div></section>
+      </div>
+      <div class="app-view" id="admin-calendar">
+        <section class="panel"><h1>Kalender Maintenance</h1><p class="muted">Jadwal maintenance berdasarkan tenggat work order.</p><div id="admin-calendar-list" class="task-grid"></div></section>
+      </div>
+      <div class="app-view" id="admin-workorders">
+      <section class="panel" id="form-tugas">
+        <div class="section-heading">
+          <div>
+            <h2>Buat Tugas Baru</h2>
+            <p class="muted">Isi informasi pekerjaan yang perlu dilakukan.</p>
+          </div>
+        </div>
+
+        <form id="task-form" class="form-grid">
+          <div class="field full-width">
+            <label for="judul">Nama tugas</label>
+            <input id="judul" required
+              placeholder="Contoh: Membersihkan ruang kelas">
+          </div>
+
+          <div class="field">
+            <label for="lokasi">Lokasi</label>
+            <select id="lokasi" required>
+              <option value="">Pilih lokasi</option>
+              <option>Gedung A</option>
+              <option>Gedung B</option>
+              <option>Gedung C</option>
+              <option>Perpustakaan</option>
+              <option>Toilet</option>
+              <option>Halaman Kampus</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="petugas">Petugas</label>
+            <select id="petugas" required>
+              <option value="">Pilih petugas</option>
+              <option>Petugas 1</option>
+              <option>Petugas 2</option>
+              <option>Petugas 3</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="prioritas">Prioritas</label>
+            <select id="prioritas">
+              <option>Normal</option>
+              <option>Tinggi</option>
+              <option>Darurat</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="tenggat">Tanggal tenggat</label>
+            <input type="date" id="tenggat" required>
+          </div>
+
+          <div class="field full-width">
+            <label for="deskripsi">Deskripsi pekerjaan</label>
+            <textarea id="deskripsi" rows="3"
+              placeholder="Jelaskan pekerjaan yang perlu dilakukan"></textarea>
+          </div>
+
+          <div class="full-width form-actions">
+            <button class="btn btn-primary" type="submit">
+              + Simpan Tugas
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel" id="daftar-tugas">
+        <div class="section-heading">
+          <div>
+            <h2>Daftar Tugas</h2>
+            <p class="muted">Pantau perkembangan pekerjaan petugas.</p>
+          </div>
+          <button class="btn btn-outline" id="reset-demo" type="button">
+            Reset Demo
+          </button>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Tugas</th>
+                <th>Lokasi</th>
+                <th>Petugas</th>
+                <th>Prioritas</th>
+                <th>Tenggat</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="admin-task-list"></tbody>
+          </table>
+        </div>
+        <p id="admin-empty" class="empty-state" hidden>
+          Belum ada tugas. Silakan buat tugas baru.
+        </p>
+      </section>
+      </div>
+      <div class="app-view" id="admin-reports">
+        <section class="panel"><h1>Laporan</h1><p class="muted">Laporan pekerjaan yang sudah diperbarui oleh petugas.</p><div id="admin-report-list" class="task-grid"></div></section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

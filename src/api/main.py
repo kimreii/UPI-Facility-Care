@@ -1,11 +1,13 @@
 import os
 import shutil
+import threading
 import uuid
 from typing import Optional
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from src.core.analyzer import FacilityAnalyzer
 
@@ -30,6 +32,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Inisialisasi Modul AI dan Database (Otomatis pilih PostgreSQL di Cloud/Railway atau SQL Server di Lokal)
 analyzer = FacilityAnalyzer(model_path=os.getenv("MODEL_PATH", "models/yolov8n.pt"))
+AI_INFERENCE_LOCK = threading.Lock()
+
+
+def _run_ai_analysis_safe(img):
+    """Resize foto beresolusi terlalu tinggi (kamera HP) dan jalankan YOLOv8 secara thread-safe."""
+    import cv2
+    h, w = img.shape[:2]
+    max_dim = 1280
+    if max(h, w) > max_dim:
+        scale = max_dim / float(max(h, w))
+        img = cv2.resize(img, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA)
+    with AI_INFERENCE_LOCK:
+        return analyzer.analyze_frame(img)
 pg_url = os.getenv("DATABASE_URL") or os.getenv("DATABASE_PRIVATE_URL")
 if pg_url:
     from src.database.pg_manager import PostgresDatabaseManager
@@ -200,7 +215,9 @@ async def inspect_facility(
     import numpy as np
     import cv2
 
-    if not file.content_type.startswith("image/"):
+    if file.content_type and not (
+        file.content_type.startswith("image/") or file.content_type == "application/octet-stream"
+    ):
         raise HTTPException(status_code=400, detail="File yang diunggah harus berupa gambar.")
 
     try:
@@ -211,8 +228,8 @@ async def inspect_facility(
         if img is None:
             raise HTTPException(status_code=400, detail="Format file gambar tidak valid atau rusak.")
 
-        # 2. Jalankan Computer Vision AI
-        ai_result = analyzer.analyze_frame(img)
+        # 2. Jalankan Computer Vision AI di threadpool + lock agar aman saat diakses banyak user
+        ai_result = await run_in_threadpool(_run_ai_analysis_safe, img)
 
         # 3. Encode gambar teranotasi ke bytes JPEG
         annotated_display = ai_result["annotated_frame"]
@@ -302,11 +319,15 @@ async def inspect_facility(
 
 @app.get("/api/inspections/{inspection_id}/image/{image_type}")
 def get_inspection_image_from_sql(inspection_id: int, image_type: str = "annotated"):
-    """Mengambil foto hasil inspeksi langsung dari binary (BLOB) di dalam tabel SQL Server"""
+    """Mengambil foto hasil inspeksi langsung dari binary (BLOB) di dalam tabel database"""
     img_bytes = db_manager.get_inspection_image(inspection_id=inspection_id, image_type=image_type)
     if not img_bytes:
-        raise HTTPException(status_code=404, detail="Foto tidak ditemukan di dalam database SQL Server.")
-    return Response(content=img_bytes, media_type="image/jpeg")
+        raise HTTPException(status_code=404, detail="Foto tidak ditemukan di dalam database.")
+    return Response(
+        content=img_bytes,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 @app.post("/api/analyze-frame")
 async def analyze_camera_frame(file: UploadFile = File(...)):
@@ -320,7 +341,7 @@ async def analyze_camera_frame(file: UploadFile = File(...)):
         if frame is None:
             raise HTTPException(status_code=400, detail="Format frame kamera tidak valid.")
 
-        res = analyzer.analyze_frame(frame)
+        res = await run_in_threadpool(_run_ai_analysis_safe, frame)
         return {
             "success": True,
             "status": res["status"],

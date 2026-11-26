@@ -164,8 +164,8 @@ class SQLiteDatabaseManager:
             conn.commit()
             return cur.lastrowid
 
-    def get_inspection_image(self, inspection_id: int, img_type: str = "annotated") -> Optional[bytes]:
-        col = "image_annotated_data" if img_type == "annotated" else "image_original_data"
+    def get_inspection_image(self, inspection_id: int, image_type: str = "annotated") -> Optional[bytes]:
+        col = "image_annotated_data" if image_type == "annotated" else "image_original_data"
         with self.get_connection() as conn:
             row = conn.execute(f"SELECT {col} FROM inspections WHERE inspection_id = ?;", (inspection_id,)).fetchone()
             return bytes(row[0]) if row and row[0] else None

@@ -6,6 +6,6 @@ mobile-app/node_modules/
 mobile-app/.expo/
 cloudflared.exe
 models/waste_yolov8.pt
-models/litter_yolov8.pt
+Ultralytics/
 *.log
 .env

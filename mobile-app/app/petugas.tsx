@@ -10,6 +10,7 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Task, Asset, AiInspectionResult } from '../src/types';
@@ -329,12 +330,41 @@ export default function PetugasScreen() {
     }
   }, []);
 
+  const handleSetPetugasAuthenticated = useCallback((auth: boolean) => {
+    setIsPetugasAuthenticated(auth);
+    if (!auth) {
+      AsyncStorage.removeItem('upiFacilityCare_petugasSession').catch(() => {});
+    }
+  }, []);
+
   const handleUpdateOfficerProfile = useCallback(async (next: PetugasProfileData) => {
     setPetugasProfile(next);
     setOfficers(prev =>
       prev.map(o => (o.id === next.id ? { ...o, ...next } : o))
     );
+    AsyncStorage.setItem(
+      'upiFacilityCare_petugasSession',
+      JSON.stringify({ authenticated: true, profile: next })
+    ).catch(() => {});
     await saveOfficerApi(next);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('upiFacilityCare_petugasSession');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.authenticated && parsed.profile) {
+            setPetugasProfile(parsed.profile);
+            setIsPetugasAuthenticated(true);
+            setCurrentTab('tugas');
+          }
+        }
+      } catch {
+        // ignore storage error
+      }
+    })();
   }, []);
 
   const handleRegisterNewOfficer = useCallback(async (newOfficer: OfficerDto) => {
@@ -1290,7 +1320,7 @@ export default function PetugasScreen() {
               profile={petugasProfile}
               officers={officers}
               isAuthenticated={isPetugasAuthenticated}
-              onSetAuthenticated={setIsPetugasAuthenticated}
+              onSetAuthenticated={handleSetPetugasAuthenticated}
               onUpdateProfile={handleUpdateOfficerProfile}
               onRegisterOfficer={handleRegisterNewOfficer}
               tasks={tasks}

@@ -39,7 +39,7 @@ def _run_ai_analysis_safe(img):
     """Resize foto beresolusi terlalu tinggi (kamera HP) dan jalankan YOLOv8 secara thread-safe."""
     import cv2
     h, w = img.shape[:2]
-    max_dim = 1280
+    max_dim = 960
     if max(h, w) > max_dim:
         scale = max_dim / float(max(h, w))
         img = cv2.resize(img, (max(1, int(w * scale)), max(1, int(h * scale))), interpolation=cv2.INTER_AREA)

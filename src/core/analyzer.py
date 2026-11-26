@@ -56,12 +56,16 @@ class FacilityAnalyzer:
         'bowl': ('wadah / mangkuk', 'Cleanliness'),
         'banana': ('sisa pisang', 'Cleanliness'),
         
-        # Sampah dari Model Waste YOLO
+        # Sampah dari Model Waste / Litter YOLO
         'paper': ('tisu / kertas', 'Cleanliness'),
         'plastic': ('sampah plastik', 'Cleanliness'),
         'cardboard': ('kardus', 'Cleanliness'),
         'metal': ('kaleng / logam', 'Cleanliness'),
         'organic': ('sisa makanan', 'Cleanliness'),
+        'glass': ('sampah kaca', 'Cleanliness'),
+        'e-waste': ('sampah elektronik', 'Cleanliness'),
+        'medical': ('sampah medis / masker', 'Cleanliness'),
+        'litter': ('sampah / plastik', 'Cleanliness'),
     }
 
     # Kategori Kerusakan Fisik Fasilitas
@@ -87,13 +91,14 @@ class FacilityAnalyzer:
         self.model = YOLO(self.model_path)
         print("[AI Analyzer] Primary YOLO model loaded successfully.")
 
-        waste_path = "models/waste_yolov8.pt"
-        if os.path.exists(waste_path):
-            try:
-                self.waste_model = YOLO(waste_path)
-                print("[AI Analyzer] Waste YOLOv8 model loaded successfully.")
-            except Exception as e:
-                print(f"[AI Analyzer] Warning loading waste model: {e}")
+        for waste_path in ("models/waste_yolov8.pt", "models/litter_yolov8.pt"):
+            if os.path.exists(waste_path):
+                try:
+                    self.waste_model = YOLO(waste_path)
+                    print(f"[AI Analyzer] Waste/Litter YOLOv8 model loaded successfully: {waste_path}")
+                    break
+                except Exception as e:
+                    print(f"[AI Analyzer] Warning loading {waste_path}: {e}")
 
     def _resolve_furniture_vs_waste(
         self, facility_items: List[Dict[str, Any]], waste_items: List[Dict[str, Any]]
@@ -693,7 +698,7 @@ class FacilityAnalyzer:
         # =========================================================================
         # 1. Jalankan Model Base YOLO (Perabot & Fasilitas, Abaikan 'person' dan 'door')
         # =========================================================================
-        base_results = self.model.predict(source=frame, conf=conf_threshold, verbose=False)[0]
+        base_results = self.model.predict(source=frame, conf=conf_threshold, imgsz=512, verbose=False)[0]
         for box in base_results.boxes:
             cls_id = int(box.cls[0])
             raw_name = self.model.names.get(cls_id, f"class_{cls_id}").lower()
@@ -736,7 +741,7 @@ class FacilityAnalyzer:
         # =========================================================================
         if self.waste_model is not None:
             gray_full = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            waste_results = self.waste_model.predict(source=frame, conf=0.52, verbose=False)[0]
+            waste_results = self.waste_model.predict(source=frame, conf=0.38, imgsz=512, verbose=False)[0]
             for box in waste_results.boxes:
                 w_id = int(box.cls[0])
                 w_name = self.waste_model.names.get(w_id, "").lower()

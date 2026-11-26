@@ -11,10 +11,12 @@ import {
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Asset } from '../types';
 import { renderFacilityIcon } from './AdminIcons';
+import { FacilityRepairStat } from './facilityRepairStats';
 import { ui } from './adminStyles';
 
 interface AdminAssetsScreenProps {
   filteredAssets: Asset[];
+  repairStatsByAsset?: Record<string, FacilityRepairStat>;
   assetSearchQuery: string;
   onChangeSearch: (q: string) => void;
   assetCategoryFilter: string;
@@ -28,6 +30,7 @@ interface AdminAssetsScreenProps {
 
 export const AdminAssetsScreen: React.FC<AdminAssetsScreenProps> = ({
   filteredAssets,
+  repairStatsByAsset = {},
   assetSearchQuery,
   onChangeSearch,
   assetCategoryFilter,
@@ -115,6 +118,9 @@ export const AdminAssetsScreen: React.FC<AdminAssetsScreenProps> = ({
         ) : (
           filteredAssets.map(asset => {
             const isAktif = asset.status !== 'Tutup';
+            const rStat = repairStatsByAsset[asset.code];
+            const replacedCount = rStat?.replacedCount ?? 0;
+            const activeDmg = rStat?.activeDamageCount ?? 0;
             return (
               <TouchableOpacity
                 key={asset.code}
@@ -131,6 +137,40 @@ export const AdminAssetsScreen: React.FC<AdminAssetsScreenProps> = ({
                   <Text style={ui.assetCardSubtitle}>
                     {asset.code} • {asset.location}
                   </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                    <View
+                      style={{
+                        backgroundColor: replacedCount > 0 ? '#EEF2FF' : '#F3F4F6',
+                        paddingHorizontal: 7,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10.5,
+                          fontWeight: '700',
+                          color: replacedCount > 0 ? '#3730A3' : '#6B7280',
+                        }}
+                      >
+                        Diganti / Diperbaiki: {replacedCount}x
+                      </Text>
+                    </View>
+                    {activeDmg > 0 && (
+                      <View
+                        style={{
+                          backgroundColor: '#FEF2F2',
+                          paddingHorizontal: 7,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#DC2626' }}>
+                          {activeDmg} Kerusakan Aktif
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
 
                 <View style={ui.assetCardRightActions}>

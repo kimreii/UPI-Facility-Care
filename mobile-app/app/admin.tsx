@@ -27,11 +27,16 @@ import {
   updateRoomStatusApi,
   fetchDamageReportsApi,
   updateDamageReportStatusApi,
+  fetchRecentInspectionsApi,
+  RecentInspectionDto,
+  DamageReportDto,
   fetchOfficersApi,
   saveOfficerApi,
   OfficerDto,
 } from '../src/api';
 import { TEAM_PROFILES } from '../src/petugas/PetugasProfileScreen';
+import { PetugasDashboardScreen } from '../src/petugas/PetugasDashboardScreen';
+import { computeFacilityRepairStats } from '../src/admin/facilityRepairStats';
 import { ServerConfigModal } from '../src/ServerConfigModal';
 import {
   AdminTab,
@@ -71,6 +76,8 @@ export default function AdminScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assets, setAssets] = useState<Asset[]>(initialAssets);
   const [officers, setOfficers] = useState<OfficerDto[]>([]);
+  const [allDbReports, setAllDbReports] = useState<DamageReportDto[]>([]);
+  const [recentInspections, setRecentInspections] = useState<RecentInspectionDto[]>([]);
   const [selectedOfficerDetail, setSelectedOfficerDetail] = useState<OfficerDto | null>(null);
   const [showAddOfficerModal, setShowAddOfficerModal] = useState(false);
   const [newOfficerName, setNewOfficerName] = useState('');
@@ -290,7 +297,16 @@ export default function AdminScreen() {
         .forEach(t => knownAdminDoneTaskIdsRef.current.add(t.id));
     }
 
-    const dbReports = await fetchDamageReportsApi();
+    const [dbReports, dbInspections] = await Promise.all([
+      fetchDamageReportsApi(),
+      fetchRecentInspectionsApi(30),
+    ]);
+    if (Array.isArray(dbInspections)) {
+      setRecentInspections(dbInspections);
+    }
+    if (Array.isArray(dbReports)) {
+      setAllDbReports(dbReports);
+    }
     if (dbReports && dbReports.length > 0) {
       const activeDbReports = dbReports.filter(r => r.status !== 'Ditolak');
       const nextReportsSig = activeDbReports
@@ -552,6 +568,11 @@ export default function AdminScreen() {
     );
   }, [incomingReports, tasks, dismissedAdminNotifKeys]);
 
+  const repairStatsByAsset = useMemo(
+    () => computeFacilityRepairStats(assets, tasks, allDbReports),
+    [assets, tasks, allDbReports]
+  );
+
   const stats = useMemo(() => {
     const selesai = tasks.filter(t => t.status === 'Selesai').length;
     const dalamProses = tasks.filter(t => t.status === 'Diproses').length;
@@ -784,6 +805,7 @@ export default function AdminScreen() {
         >
           <AdminAssetsScreen
             filteredAssets={filteredAssets}
+            repairStatsByAsset={repairStatsByAsset}
             assetSearchQuery={assetSearchQuery}
             onChangeSearch={setAssetSearchQuery}
             assetCategoryFilter={assetCategoryFilter}
@@ -879,6 +901,7 @@ export default function AdminScreen() {
             tasks={tasks}
             reportDates={incomingReports.map(r => r.date)}
             officers={officers}
+            repairStatsList={Object.values(repairStatsByAsset)}
             notifCount={adminNotifItems.length}
             onOpenNotifications={() => setShowAdminNotifications(true)}
             onSelectTaskDetail={setSelectedTaskDetail}
@@ -1043,6 +1066,7 @@ export default function AdminScreen() {
         assetCategoryFilter={assetCategoryFilter}
         onSelectCategoryFilter={setAssetCategoryFilter}
         selectedAssetMenu={selectedAssetMenu}
+        repairStatsByAsset={repairStatsByAsset}
         onCloseAssetMenu={() => setSelectedAssetMenu(null)}
         onToggleAssetStatus={handleToggleAssetStatus}
         onCreateTaskForAsset={handleCreateTaskForAsset}
@@ -1152,6 +1176,94 @@ export default function AdminScreen() {
                     <Text style={ui.statusLabelModal}>No. Telepon:</Text>
                     <Text style={ui.statusValModal}>{selectedOfficerDetail.phone}</Text>
                   </View>
+
+                  {/* Dashboard Kinerja Petugas (Tampilan Dashboard Petugas di dalam Profil Petugas Admin) */}
+                  {(() => {
+                    const oName = (selectedOfficerDetail.name || '').toLowerCase().trim();
+                    const oId = (selectedOfficerDetail.id || '').toLowerCase().trim();
+                    const officerTasks = tasks.filter(t => {
+                      const p = (t.petugas || '').toLowerCase();
+                      return (oName && p.includes(oName)) || (oId && p.includes(oId));
+                    });
+                    const officerReports = allDbReports
+                      .filter(r => {
+                        const rep = (r.pelapor || '').toLowerCase();
+                        return (oName && rep.includes(oName)) || (oId && rep.includes(oId));
+                      })
+                      .map(r => ({
+                        id: r.id,
+                        judul: r.judul,
+                        lokasi: r.lokasi,
+                        urgensi: (r.urgensi as 'Mendesak' | 'Tinggi' | 'Sedang') || 'Mendesak',
+                        tanggal: r.tanggal || '-',
+                        jam: r.jam || '-',
+                        waktu: r.waktu || `${r.tanggal} • ${r.jam}`,
+                        status: (r.status as any) || 'Dalam Peninjauan',
+                        kategori: Array.isArray(r.kategori) ? r.kategori : [],
+                        catatan: r.catatan || '',
+                        foto: r.foto || '',
+                      }));
+                    const officerTaskInspIds = new Set(
+                      officerTasks
+                        .map(t => t.inspectionId)
+                        .filter((id): id is number => typeof id === 'number')
+                    );
+                    const officerInspections = recentInspections.filter(i =>
+                      officerTaskInspIds.has(i.inspection_id)
+                    );
+                    const officerProfileData = {
+                      id: selectedOfficerDetail.id,
+                      name: selectedOfficerDetail.name,
+                      role: selectedOfficerDetail.role,
+                      shift: selectedOfficerDetail.shift,
+                      area: selectedOfficerDetail.area,
+                      phone: selectedOfficerDetail.phone,
+                      avatarUri: selectedOfficerDetail.avatarUri,
+                      statusText:
+                        selectedOfficerDetail.statusText === 'Istirahat'
+                          ? ('Istirahat' as const)
+                          : ('Aktif Bertugas' as const),
+                      completionRate: selectedOfficerDetail.completionRate || 0,
+                    };
+
+                    return (
+                      <View style={{ marginTop: 8 }}>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            fontWeight: '800',
+                            color: '#1E293B',
+                            marginBottom: 8,
+                          }}
+                        >
+                          Dashboard Kinerja {selectedOfficerDetail.name}
+                        </Text>
+                        <PetugasDashboardScreen
+                          embeddedInAdmin
+                          tasks={officerTasks}
+                          reports={officerReports}
+                          inspections={officerInspections}
+                          profile={officerProfileData}
+                          notifCount={0}
+                          onOpenNotifications={() => {}}
+                          onOpenProfile={() => {}}
+                          onOpenWorkOrders={filter => {
+                            setSelectedOfficerDetail(null);
+                            if (filter) setWoFilter(filter);
+                            setIsCreatingWorkOrder(false);
+                            setActiveTab('workorders');
+                          }}
+                          onOpenTaskDetail={task => {
+                            setSelectedOfficerDetail(null);
+                            setSelectedTaskDetail(task);
+                          }}
+                          onPreviewAiImage={() => {}}
+                          refreshing={false}
+                          onRefresh={() => {}}
+                        />
+                      </View>
+                    );
+                  })()}
                 </ScrollView>
 
                 <View style={{ gap: 6, marginTop: 4 }}>

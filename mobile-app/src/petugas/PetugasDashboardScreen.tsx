@@ -41,6 +41,7 @@ interface PetugasDashboardScreenProps {
   onPreviewAiImage: (uri: string) => void;
   refreshing: boolean;
   onRefresh: () => void;
+  embeddedInAdmin?: boolean;
 }
 
 export const PetugasDashboardScreen: React.FC<PetugasDashboardScreenProps> = ({
@@ -56,10 +57,11 @@ export const PetugasDashboardScreen: React.FC<PetugasDashboardScreenProps> = ({
   onPreviewAiImage,
   refreshing,
   onRefresh,
+  embeddedInAdmin = false,
 }) => {
   const { fullDateStr, now } = useRealtimeClock();
   const { width: screenWidth } = useWindowDimensions();
-  const isLaptop = screenWidth >= 900;
+  const isLaptop = !embeddedInAdmin && screenWidth >= 900;
   const [selectedDayIdx, setSelectedDayIdx] = useState<number>(3); // Default highlight Kamis (Ka)
 
   // Hitung metrik Progress Work Order secara real-time dari Microsoft SQL Server
@@ -227,8 +229,9 @@ export const PetugasDashboardScreen: React.FC<PetugasDashboardScreenProps> = ({
   const aiTimestampStr = `${formatShortDateId(now)} ${formatTimeId(now, ':')}`;
 
   return (
-    <View style={{ marginBottom: 10 }}>
+    <View style={{ marginBottom: embeddedInAdmin ? 4 : 10 }}>
       {/* Header Row: Real-Time Date, Dashboard Title, Subtitle, Bell & Profile Avatar */}
+      {!embeddedInAdmin && (
       <View style={ds.headerRow}>
         <View style={{ flex: 1, paddingRight: 10 }}>
           <Text style={ds.headerDate}>{fullDateStr}</Text>
@@ -259,6 +262,7 @@ export const PetugasDashboardScreen: React.FC<PetugasDashboardScreenProps> = ({
           </TouchableOpacity>
         </View>
       </View>
+      )}
 
       {/* Grid Responsif: 3 Kartu Sejajar di Laptop, Bertumpuk di HP */}
       <View

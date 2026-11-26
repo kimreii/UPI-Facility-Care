@@ -10,6 +10,7 @@ import {
 import { Task } from '../types';
 import { OfficerDto } from '../api';
 import { renderFacilityIcon } from './AdminIcons';
+import { FacilityRepairStat } from './facilityRepairStats';
 import { ui } from './adminStyles';
 import {
   useRealtimeClock,
@@ -34,6 +35,7 @@ interface AdminDashboardScreenProps {
   tasks: Task[];
   reportDates?: string[];
   officers?: OfficerDto[];
+  repairStatsList?: FacilityRepairStat[];
   notifCount?: number;
   onOpenNotifications: () => void;
   onSelectTaskDetail: (task: Task) => void;
@@ -49,6 +51,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
   tasks,
   reportDates = [],
   officers = [],
+  repairStatsList = [],
   notifCount = 0,
   onOpenNotifications,
   onSelectTaskDetail,
@@ -518,6 +521,149 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({
       </View>
         </View>
       </View>
+
+      {/* Section: Ringkasan Kerusakan Diganti / Perbaikan Fasilitas */}
+      {(() => {
+        const totalReplaced = repairStatsList.reduce((sum, s) => sum + s.replacedCount, 0);
+        const totalActiveDmg = repairStatsList.reduce((sum, s) => sum + s.activeDamageCount, 0);
+        const sortedRepairs = [...repairStatsList]
+          .sort((a, b) => b.replacedCount - a.replacedCount || b.activeDamageCount - a.activeDamageCount)
+          .slice(0, 6);
+        return (
+          <View style={{ marginBottom: 14 }}>
+            <View style={ad.sectionHeaderOutside}>
+              <Text style={ad.sectionTitleOutside}>
+                Penggantian & Perbaikan Kerusakan ({totalReplaced}x)
+              </Text>
+              {onNavigateToAssets && (
+                <TouchableOpacity onPress={onNavigateToAssets} activeOpacity={0.75}>
+                  <Text style={ad.seeAllLinkText}>Lihat Daftar Aset ›</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={[ad.activityCard, { paddingVertical: 14 }]}>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#EEF2FF',
+                    borderRadius: 12,
+                    padding: 12,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#4338CA' }}>
+                    Total Kerusakan Diganti
+                  </Text>
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#1E1B4B', marginTop: 2 }}>
+                    {totalReplaced} kali
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#6366F1', marginTop: 2 }}>
+                    Perbaikan / penggantian selesai
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: totalActiveDmg > 0 ? '#FEF2F2' : '#ECFDF5',
+                    borderRadius: 12,
+                    padding: 12,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      color: totalActiveDmg > 0 ? '#DC2626' : '#047857',
+                    }}
+                  >
+                    Kerusakan Menunggu Perbaikan
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 22,
+                      fontWeight: '800',
+                      color: totalActiveDmg > 0 ? '#991B1B' : '#065F46',
+                      marginTop: 2,
+                    }}
+                  >
+                    {totalActiveDmg} laporan
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: totalActiveDmg > 0 ? '#EF4444' : '#059669',
+                      marginTop: 2,
+                    }}
+                  >
+                    {totalActiveDmg > 0 ? 'Perlu tindakan perbaikan' : 'Semua kerusakan tertangani'}
+                  </Text>
+                </View>
+              </View>
+
+              {sortedRepairs.length === 0 ? (
+                <Text style={{ fontSize: 12, color: '#6B7280', textAlign: 'center', paddingVertical: 6 }}>
+                  Belum ada data fasilitas untuk dihitung riwayat perbaikannya.
+                </Text>
+              ) : (
+                <View style={{ gap: 8 }}>
+                  {sortedRepairs.map(item => (
+                    <View
+                      key={item.assetCode}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        paddingVertical: 8,
+                        paddingHorizontal: 10,
+                        backgroundColor: '#F9FAFB',
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: '#F3F4F6',
+                      }}
+                    >
+                      <View style={{ flex: 1, paddingRight: 10 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#111827' }} numberOfLines={1}>
+                          {item.assetName}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: '#6B7280' }} numberOfLines={1}>
+                          {item.assetCode} · {item.location}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <View
+                          style={{
+                            backgroundColor: item.replacedCount > 0 ? '#DBEAFE' : '#F3F4F6',
+                            paddingHorizontal: 9,
+                            paddingVertical: 3,
+                            borderRadius: 99,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: '800',
+                              color: item.replacedCount > 0 ? '#1D4ED8' : '#6B7280',
+                            }}
+                          >
+                            {item.replacedCount}x diganti / diperbaiki
+                          </Text>
+                        </View>
+                        {item.activeDamageCount > 0 && (
+                          <Text style={{ fontSize: 10.5, fontWeight: '700', color: '#DC2626', marginTop: 2 }}>
+                            +{item.activeDamageCount} aktif
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        );
+      })()}
 
       {/* Section: Tim Petugas Lapangan (Full width; grid 3 kolom di Laptop agar tidak ada area kosong) */}
       <View style={ad.sectionHeaderOutside}>

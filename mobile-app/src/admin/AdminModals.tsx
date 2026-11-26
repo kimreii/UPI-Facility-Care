@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Task, TaskPriority, Asset } from '../types';
 import { OfficerDto } from '../api';
+import { FacilityRepairStat } from './facilityRepairStats';
 import {
   LOKASI_OPTIONS,
   PETUGAS_OPTIONS,
@@ -55,6 +56,7 @@ interface AdminModalsProps {
   assetCategoryFilter: string;
   onSelectCategoryFilter: (cat: string) => void;
   selectedAssetMenu: Asset | null;
+  repairStatsByAsset?: Record<string, FacilityRepairStat>;
   onCloseAssetMenu: () => void;
   onToggleAssetStatus: (asset: Asset) => void;
   onCreateTaskForAsset: (asset: Asset) => void;
@@ -107,6 +109,7 @@ export const AdminModals: React.FC<AdminModalsProps> = ({
   assetCategoryFilter,
   onSelectCategoryFilter,
   selectedAssetMenu,
+  repairStatsByAsset = {},
   onCloseAssetMenu,
   onToggleAssetStatus,
   onCreateTaskForAsset,
@@ -532,6 +535,148 @@ export const AdminModals: React.FC<AdminModalsProps> = ({
                     </Text>
                   </View>
                 </View>
+
+                {/* Ringkasan Riwayat Perbaikan & Penggantian Fasilitas */}
+                {(() => {
+                  const stat = repairStatsByAsset[selectedAssetMenu.code];
+                  const replaced = stat?.replacedCount ?? 0;
+                  const activeDmg = stat?.activeDamageCount ?? 0;
+                  const maintDone = stat?.totalMaintenanceDone ?? 0;
+                  const hist = stat?.history ?? [];
+                  return (
+                    <View
+                      style={{
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: 12,
+                        padding: 12,
+                        marginTop: 12,
+                        marginBottom: 8,
+                        borderWidth: 1,
+                        borderColor: '#E5E7EB',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: '800',
+                          color: '#1E293B',
+                          marginBottom: 8,
+                        }}
+                      >
+                        Riwayat Perbaikan & Penggantian
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <View
+                          style={{
+                            flex: 1,
+                            backgroundColor: '#EEF2FF',
+                            borderRadius: 10,
+                            paddingVertical: 8,
+                            paddingHorizontal: 8,
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ fontSize: 16, fontWeight: '800', color: '#3730A3' }}>
+                            {replaced}x
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              fontWeight: '700',
+                              color: '#4338CA',
+                              textAlign: 'center',
+                            }}
+                          >
+                            Diganti / Diperbaiki
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            flex: 1,
+                            backgroundColor: activeDmg > 0 ? '#FEF2F2' : '#ECFDF5',
+                            borderRadius: 10,
+                            paddingVertical: 8,
+                            paddingHorizontal: 8,
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 16,
+                              fontWeight: '800',
+                              color: activeDmg > 0 ? '#DC2626' : '#059669',
+                            }}
+                          >
+                            {activeDmg}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              fontWeight: '700',
+                              color: activeDmg > 0 ? '#B91C1C' : '#047857',
+                              textAlign: 'center',
+                            }}
+                          >
+                            Kerusakan Aktif
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            flex: 1,
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: 10,
+                            paddingVertical: 8,
+                            paddingHorizontal: 8,
+                            alignItems: 'center',
+                            borderWidth: 1,
+                            borderColor: '#E5E7EB',
+                          }}
+                        >
+                          <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827' }}>
+                            {maintDone}x
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              fontWeight: '700',
+                              color: '#6B7280',
+                              textAlign: 'center',
+                            }}
+                          >
+                            WO Selesai
+                          </Text>
+                        </View>
+                      </View>
+                      {hist.length > 0 && (
+                        <View style={{ marginTop: 8, gap: 4 }}>
+                          {hist.slice(0, 3).map(h => (
+                            <View
+                              key={`${h.source}-${h.id}`}
+                              style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                paddingTop: 4,
+                                borderTopWidth: 1,
+                                borderTopColor: '#E5E7EB',
+                              }}
+                            >
+                              <Text
+                                style={{ fontSize: 11.5, color: '#374151', flex: 1, paddingRight: 8 }}
+                                numberOfLines={1}
+                              >
+                                {h.title}
+                              </Text>
+                              <Text style={{ fontSize: 10.5, color: '#6B7280', fontWeight: '600' }}>
+                                {h.date}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })()}
 
                 {/* Daftar Aksi Bersih (Human Action Sheet tanpa emoticon) */}
                 <View style={{ marginTop: 4, marginBottom: 14 }}>
